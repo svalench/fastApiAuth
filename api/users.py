@@ -17,29 +17,29 @@ router = APIRouter(
 class Status(BaseModel):
     message: str
 
-
-
-@router.get("/users", response_model=List[User_Pydantic])
-async def get_users(limit: int = 10, offset: int = 0, current_user=Depends(get_admin_user)):
-    return await User_Pydantic.from_queryset(Users.all().limit(limit).offset(offset))
-
-
-@router.post("/users", response_model=User_Pydantic)
-async def create_user(user: CreateUserModel, current_user=Depends(get_admin_user)):
-    user_obj = await add_user_to_db(user)
-    return user_obj
-
-
 @router.get(
-    "/user/{user_id}", response_model=User_Pydantic, responses={404: {"model": HTTPNotFoundError}}
+    "/{user_id}", response_model=User_Pydantic, responses={404: {"model": HTTPNotFoundError}}
 )
 async def get_user(user_id: int, current_user=Depends(get_current_active_user)):
     await current_user.check_self(user_id, None)
     return await Users.get(id=user_id)
 
 
+@router.get("", response_model=List[User_Pydantic])
+async def get_users(limit: int = 10, offset: int = 0, current_user=Depends(get_admin_user)):
+    return await User_Pydantic.from_queryset(Users.all().limit(limit).offset(offset))
+
+
+@router.post("", response_model=User_Pydantic)
+async def create_user(user: CreateUserModel, current_user=Depends(get_admin_user)):
+    user_obj = await add_user_to_db(user)
+    return user_obj
+
+
+
+
 @router.put(
-    "/user/{user_id}", response_model=User_Pydantic, responses={404: {"model": HTTPNotFoundError}}
+    "/{user_id}", response_model=User_Pydantic, responses={404: {"model": HTTPNotFoundError}}
 )
 async def update_user(user_id: int, user: UserIn_Pydantic, current_user=Depends(get_current_active_user)):
     await current_user.check_self(user_id, user)
@@ -47,7 +47,7 @@ async def update_user(user_id: int, user: UserIn_Pydantic, current_user=Depends(
     return await User_Pydantic.from_queryset_single(Users.get(id=user_id))
 
 
-@router.delete("/user/{user_id}", response_model=Status, responses={404: {"model": HTTPNotFoundError}})
+@router.delete("/{user_id}", response_model=Status, responses={404: {"model": HTTPNotFoundError}})
 async def delete_user(user_id: int, user=Depends(get_admin_user)):
     deleted_count = await Users.filter(id=user_id).delete()
     if not deleted_count:

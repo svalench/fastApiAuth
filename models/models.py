@@ -54,6 +54,9 @@ class Users(models.Model):
             return True
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Отказано в доступе')
 
+    class Meta:
+        ordering = ['-id']
+
     class PydanticMeta:
         computed = ["full_name"]
 
