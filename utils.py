@@ -1,3 +1,6 @@
+import datetime
+from typing import Dict
+
 from fastapi import Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer
@@ -31,7 +34,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def get_user(userid: int):
-    return User_Pydantic.from_queryset_single(Users.get(userid=userid))
+    return UserIn_Pydantic.from_queryset_single(Users.get(userid=userid))
 
 
 async def create_user(user: UserIn_Pydantic) -> User_Pydantic:
@@ -39,16 +42,9 @@ async def create_user(user: UserIn_Pydantic) -> User_Pydantic:
     return await User_Pydantic.from_tortoise_orm(user_obj)
 
 
-def fake_decode_token(token):
-    # This doesn't provide any security at all
-    # Check the next version
-    userid = 2
-    user = get_user(fake_users_db, userid)
-    return user
-
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = fake_decode_token(token)
+    user = await Users.get_user_by_token(token)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,12 +75,18 @@ async def add_user_to_db(user: CreateUserModel):
     return new_user
 
 
-async def get_admin_user(token: str = Depends(oauth2_scheme)) -> User_Pydantic:
+def generate_token(user: Users):
+    paylod = {'id': str(user.id),
+              'datetime': str(datetime.datetime.now())}
+    return jwt.encode(paylod, settings.jwt_secret)
+
+def decode_token(token: str) -> Dict:
+    return jwt.decode(token, settings.jwt_secret, algorithms=['HS256'])
+
+async def get_admin_user(token: str = Depends(oauth2_scheme)) -> Users:
     """метод получает данные текущего авторизованного пользователя и проверяет что он админ"""
     try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=['HS256'])
-        user = await get_user(payload.get('id'))
-        print(user, 'admin_log_user')
+        user = await Users.get_user_by_token(token)
     except:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -95,3 +97,4 @@ async def get_admin_user(token: str = Depends(oauth2_scheme)) -> User_Pydantic:
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail='не достаточно прав')
+

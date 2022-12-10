@@ -1,12 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from starlette import status
-from tortoise.contrib.fastapi import HTTPNotFoundError, register_tortoise
+from fastapi import FastAPI
+from tortoise.contrib.fastapi import register_tortoise
 
 from api import auth, users
-from models.models import User_Pydantic, UserIn_Pydantic, Users
 from settings import settings
-from utils import get_user
 
 
 app = FastAPI(
